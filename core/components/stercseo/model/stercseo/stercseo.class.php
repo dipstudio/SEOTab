@@ -29,8 +29,7 @@
  *
  * @package stercseo
  */
-class StercSEO
-{
+class StercSEO {
 
     /**
      * @access protected
@@ -49,9 +48,9 @@ class StercSEO
     public $config = array();
     /**
      * @access public
-     * @var modTemplateVar A reference to the stercseo TV which is used to store linked resources.
-     * The linked resources are stored using this syntax: [contextKey1]:[resourceId1];[contextKey2]:[resourceId2]
-     * Example: web:1;de:4;es:7;fr:10
+     * @var	modTemplateVar A reference to the stercseo TV which is used to store linked resources.
+     * 		The linked resources are stored using this syntax: [contextKey1]:[resourceId1];[contextKey2]:[resourceId2]
+     * 		Example: web:1;de:4;es:7;fr:10
      */
     public $stercseoTv = null;
 
@@ -67,17 +66,14 @@ class StercSEO
      * behaviour.
      * @return StercSEO A unique StercSEO instance.
      */
-    public function __construct(modX &$modx, array $config = array())
-    {
+    function __construct(modX &$modx,array $config = array()) {
         $this->modx =& $modx;
 
-        $corePath = $this->modx->getOption('stercseo.core_path', null, $modx->getOption('core_path').'components/stercseo/');
-        $assetsPath = $this->modx->getOption('stercseo.assets_path', null, $this->modx->getOption('assets_path') . 'components/stercseo/');
-        $assetsUrl = $this->modx->getOption('stercseo.assets_url', null, $modx->getOption('assets_url').'components/stercseo/');
+        $corePath = $this->modx->getOption('stercseo.core_path',null,$modx->getOption('core_path').'components/stercseo/');
+        $assetsUrl = $this->modx->getOption('stercseo.assets_url',null,$modx->getOption('assets_url').'components/stercseo/');
         $connectorUrl = $assetsUrl.'connector.php';
 
         $this->config = array_merge(array(
-            'assetsPath' => $assetsPath,
             'assetsUrl' => $assetsUrl,
             'cssUrl' => $assetsUrl.'css/',
             'jsUrl' => $assetsUrl.'js/',
@@ -92,8 +88,8 @@ class StercSEO
             'snippetsPath' => $corePath.'elements/snippets/',
             'processorsPath' => $corePath.'processors/',
             'templatesPath' => $corePath.'templates/',
-        ), $config);
-        $this->modx->addPackage('stercseo', $this->config['modelPath']);
+        ),$config);
+
         /* load stercseo lexicon */
         if ($this->modx->lexicon) {
             $this->modx->lexicon->load('stercseo:default');
@@ -110,30 +106,6 @@ class StercSEO
     }
 
     /**
-     * Get a local configuration option or a namespaced system setting by key.
-     *
-     * @param string $key The option key to search for.
-     * @param array $options An array of options that override local options.
-     * @param mixed $default The default value returned if the option is not found locally or as a
-     * namespaced system setting; by default this value is null.
-     * @return mixed The option value or the default value specified.
-     */
-    public function getOption($key, $options = array(), $default = null)
-    {
-        $option = $default;
-        if (!empty($key) && is_string($key)) {
-            if ($options != null && array_key_exists($key, $options)) {
-                $option = $options[$key];
-            } elseif (array_key_exists($key, $this->config)) {
-                $option = $this->config[$key];
-            } elseif (array_key_exists("{$this->namespace}.{$key}", $this->modx->config)) {
-                $option = $this->modx->getOption("{$this->namespace}.{$key}");
-            }
-        }
-        return $option;
-    }
-
-    /**
      * Gets a Chunk and caches it; also falls back to file-based templates
      * for easier debugging.
      *
@@ -142,16 +114,13 @@ class StercSEO
      * @param array $properties The properties for the Chunk
      * @return string The processed content of the Chunk
      */
-    public function getChunk($name, $properties = array())
-    {
+    public function getChunk($name,$properties = array()) {
         $chunk = null;
         if (!isset($this->chunks[$name])) {
             $chunk = $this->_getTplChunk($name);
             if (empty($chunk)) {
-                $chunk = $this->modx->getObject('modChunk', array('name' => $name), true);
-                if ($chunk == false) {
-                    return false;
-                }
+                $chunk = $this->modx->getObject('modChunk',array('name' => $name),true);
+                if ($chunk == false) return false;
             }
             $this->chunks[$name] = $chunk->getContent();
         } else {
@@ -172,96 +141,71 @@ class StercSEO
      * @return modChunk/boolean Returns the modChunk object if found, otherwise
      * false.
      */
-    private function _getTplChunk($name, $postFix = '.chunk.tpl')
-    {
+    private function _getTplChunk($name,$postFix = '.chunk.tpl') {
         $chunk = false;
         $f = $this->config['chunksPath'].strtolower($name).$postFix;
         if (file_exists($f)) {
             $o = file_get_contents($f);
             /** @var modChunk $chunk */
             $chunk = $this->modx->newObject('modChunk');
-            $chunk->set('name', $name);
+            $chunk->set('name',$name);
             $chunk->setContent($o);
         }
         return $chunk;
     }
-
-    public function sitemap($contextKey = array('web'), $rowTpl = '', $outerTpl = '', $allowSymlinks = '')
-    {
+    public function sitemap($contextKey = array('web'), $rowTpl, $outerTpl, $allowSymlinks){
         $c = $this->modx->newQuery('modResource');
         $c->where(array(
             array('context_key:IN' => $contextKey, 'published' => 1, 'deleted' => 0),
-            array('properties:LIKE' => '%"sitemap":"1"%', 'OR:properties:LIKE' => '%"sitemap":null%', 'OR:properties:IS' => null)
+            array('properties:LIKE' => '%"sitemap":"1"%', 'OR:properties:LIKE' => '%"sitemap":null%', 'OR:properties:IS' => NULL)
         ));
-        if (!$allowSymlinks) {
-            $c->where(array('class_key:!=' => 'modSymLink'));
-        }
+        if(!$allowSymlinks) $c->where(array('class_key:!=' => 'modSymLink'));
         $resources = $this->modx->getCollection('modResource', $c);
+
+        $resource_map = array();
+
+        foreach($resources AS $resource){
+            //Debug
+            //$this->modx->log(modX::LOG_LEVEL_ERROR, $resource->get('id')." will be in sitemap. Parent: ".$resource->get('parent'));
+            
+            $resource_map[$resource->get('id')] = true;
+        }
+
+        $output = '';
+
         foreach ($resources as $resource) {
+            
             $properties = $resource->getProperties('stercseo');
             $editedon = $resource->get('editedon');
             $createdon = $resource->get('createdon');
-            $output .= $this->getChunk($rowTpl, array(
+
+            $parent = $resource->get('parent');
+
+            if(!empty($parent) && !array_key_exists($parent, $resource_map) && array_key_exists('sitemap', $properties) && empty($properties['sitemap'])) {
+                continue;
+            }
+
+            $output .= $this->getChunk($rowTpl,array(
                 'url' => $this->modx->makeUrl($resource->get('id'), '', '', 'full'),
                 'lastmod' => date('c', strtotime((($editedon > 0) ? $editedon : $createdon))),
                 'changefreq' => (!empty($properties['changefreq']) ? $properties['changefreq'] : $this->defaults['changefreq']),
                 'priority' => (!empty($properties['priority']) ? $properties['priority'] : $this->defaults['priority']),
             ));
         }
+
         return $this->getChunk($outerTpl, array('wrapper' => $output));
     }
 
-    public function isAllowed($context_key)
-    {
+    public function isAllowed($context_key){
         $allowedContexts = $this->modx->getOption('stercseo.allowed_contexts');
-        if ($allowedContexts && !empty($allowedContexts)) {
-            if (in_array($context_key, explode(',', $allowedContexts))) {
+        if($allowedContexts && !empty($allowedContexts)){
+            if(in_array($context_key, explode(',', $allowedContexts))){
                 return true;
-            } else {
+            }else{
                 return false;
             }
         }
         return true;
     }
 
-    public function checkUserAccess($user = false)
-    {
-        if (!$user) {
-            $user = $this->modx->getUser();
-        }
-        $exclUsergroups = explode(',', $this->modx->getOption('stercseo.hide_from_usergroups'));
-        if (!empty($exclUsergroups)) {
-            foreach ($exclUsergroups as $exclUserGroup) {
-                if ($user->isMember($exclUserGroup)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    public function redirectMigrationStatus()
-    {
-        $migrationStatus = true;
-        $migrationStatusSetting = $this->modx->getObject('modSystemSetting', array('key' => 'stercseo.migration_status', 'namespace' => 'stercseo_custom', 'value' => '1'));
-        if (!$migrationStatusSetting) {
-            $resources = $this->modx->getIterator('modResource', array('context_key:!=' => 'mgr'));
-            foreach ($resources as $resource) {
-                $properties = $resource->getProperties('stercseo');
-                if ($properties['urls'] && count($properties['urls']) > 0) {
-                    $migrationStatus = false;
-                    break;
-                }
-            }
-            $migrationStatusSetting = $this->modx->getObject('modSystemSetting', array('key' => 'stercseo.migration_status', 'namespace' => 'stercseo_custom'));
-            if (!$migrationStatusSetting) {
-                $migrationStatusSetting = $this->modx->newObject('modSystemSetting');
-                $migrationStatusSetting->set('key', 'stercseo.migration_status');
-                $migrationStatusSetting->set('namespace', 'stercseo_custom');
-            }
-            $migrationStatusSetting->set('value', (int)$migrationStatus);
-            $migrationStatusSetting->save();
-        }
-        return $migrationStatus;
-    }
 }
